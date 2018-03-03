@@ -7,8 +7,7 @@ import { StoreModule } from '@ngrx/store';
 import { <%= camelize(name) %>Routes } from './<%= dasherize(name) %>.routing';
 
 @NgModule({
-  declarations: [
-  ],
+  declarations: [],
   imports: [
     CommonModule,
     RouterModule.forChild(<%= camelize(name) %>Routes),
