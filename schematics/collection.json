@@ -1,0 +1,20 @@
+{
+  "$schema": "../node_modules/@angular-devkit/schematics/collection-schema.json",
+  "schematics": {
+    "module": {
+      "description": "Generate a module with all ngrx boilerplate already set up",
+      "factory": "./bin/module/module#module",
+      "schema": "./module/schema.json"
+    },
+    "page": {
+      "description": "Generate a page with all ngrx boilerplate already set up",
+      "factory": "./bin/page/page#page",
+      "schema": "./page/schema.json"
+    },
+    "component": {
+      "description": "Generate a component with all ngrx boilerplate already set up",
+      "factory": "./bin/component/component#component",
+      "schema": "./component/schema.json"
+    }
+  }
+}

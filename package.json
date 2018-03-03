@@ -8,9 +8,14 @@
     "build": "ng build --prod",
     "test": "ng test",
     "lint": "ng lint",
-    "e2e": "ng e2e"
+    "e2e": "ng e2e",
+    "build-schematics": "tsc -p schematics/tsconfig.json",
+    "generate-module": "node ./node_modules/@angular-devkit/schematics-cli/bin/schematics.js .:module --dry-run false --name",
+    "generate-page": "node ./node_modules/@angular-devkit/schematics-cli/bin/schematics.js .:page --dry-run false --styleext scss --name",
+    "generate-component": "node ./node_modules/@angular-devkit/schematics-cli/bin/schematics.js .:component --dry-run false --styleext scss -p app --name"
   },
   "private": true,
+  "schematics": "./schematics/collection.json",
   "dependencies": {
     "@angular/animations": "5.2.7",
     "@angular/common": "5.2.7",
@@ -31,6 +36,10 @@
     "@angular/cli": "1.7.2",
     "@angular/compiler-cli": "5.2.7",
     "@angular/language-service": "5.2.7",
+    "@angular-devkit/core": "0.4.3",
+    "@angular-devkit/schematics": "0.4.3",
+    "@angular-devkit/schematics-cli": "0.4.3",
+    "@schematics/angular": "0.4.3",
     "@types/jasmine": "2.8.6",
     "@types/jasminewd2": "2.0.3",
     "@types/node": "9.4.6",

@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "id": "SchematicsNgrxComponent",
+  "title": "ngrx component options schema",
+  "type": "object",
+  "properties": {
+    "path": {
+      "type": "string",
+      "format": "path",
+      "description": "The path to create the component.",
+      "default": "",
+      "visible": false
+    },
+    "name": {
+      "type": "string",
+      "description": "The name of the component."
+    },
+    "inlineStyle": {
+      "description": "Specifies if the style will be in the ts file.",
+      "type": "boolean",
+      "default": false,
+      "alias": "is"
+    },
+    "inlineTemplate": {
+      "description": "Specifies if the template will be in the ts file.",
+      "type": "boolean",
+      "default": false,
+      "alias": "it"
+    },
+    "prefix": {
+      "type": "string",
+      "format": "html-selector",
+      "description": "The prefix to apply to generated selectors.",
+      "alias": "p"
+    },
+    "styleext": {
+      "description": "The file extension to be used for style files.",
+      "type": "string",
+      "default": "css"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "id": "SchematicsNgrxPage",
+  "title": "ngrx page options schema",
+  "type": "object",
+  "properties": {
+    "module": {
+      "type": "string",
+      "description": "The name of the containing module.",
+      "alias": "m"
+    },
+    "name": {
+      "type": "string",
+      "description": "The name of the page."
+    },
+    "styleext": {
+      "description": "The file extension to be used for style files.",
+      "type": "string",
+      "default": "css"
+    }
+  },
+  "required": [
+    "name",
+    "module"
+  ]
+}

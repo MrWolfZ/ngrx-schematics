@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "id": "SchematicsNgrxModule",
+  "title": "ngrx module options schema",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "The name of the module."
+    }
+  },
+  "required": [
+    "name"
+  ]
+}
