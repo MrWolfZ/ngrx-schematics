@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs/Observable';
 
-import { RootState } from './<%= dasherize(name) %>.state';
+import { <% if(classify(name) <= 'RootState') { %><%= classify(name) %>PageState, <% } %>RootState<% if(classify(name) > 'RootState') { %>, <%= classify(name) %>PageState<% } %> } from './<%= dasherize(name) %>.state';
 
 @Component({
   templateUrl: './<%= dasherize(name) %>.page.html',
@@ -10,8 +10,9 @@ import { RootState } from './<%= dasherize(name) %>.state';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class <%= classify(name) %>Page {
+  state$: Observable<<%= classify(name) %>PageState>;
 
-  constructor(store: Store<RootState>) { 
-
+  constructor(store: Store<RootState>) {
+    this.state$ = store.select(s => s.<%= camelize(name) %>);
   }
 }
