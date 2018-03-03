@@ -73,7 +73,7 @@
     "no-duplicate-super": true,
     "no-duplicate-variable": true,
     "no-empty": true,
-    "no-empty-interface": true,
+    "no-empty-interface": false,
     "no-eval": true,
     "no-floating-promises": false,
     "no-for-in-array": true,
