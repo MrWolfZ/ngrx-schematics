@@ -16,6 +16,8 @@
       "dom"
     ],
     "strict": true,
-    "strictPropertyInitialization": false
+    "strictPropertyInitialization": false,
+    "noUnusedParameters": true,
+    "noUnusedLocals": true
   }
 }
