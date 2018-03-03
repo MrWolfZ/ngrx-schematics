@@ -1,0 +1,12 @@
+// tslint:disable:no-import-side-effect
+import 'rxjs/add/observable/of';
+import 'rxjs/add/observable/timer';
+import 'rxjs/add/operator/catch';
+import 'rxjs/add/operator/concat';
+import 'rxjs/add/operator/delay';
+import 'rxjs/add/operator/distinct';
+import 'rxjs/add/operator/filter';
+import 'rxjs/add/operator/first';
+import 'rxjs/add/operator/map';
+import 'rxjs/add/operator/mergeMap';
+import 'rxjs/add/operator/switchMap';
