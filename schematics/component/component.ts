@@ -8,14 +8,22 @@ import {
   noop,
   Rule,
   SchematicContext,
-  SchematicsException,
   template,
   Tree,
   url,
 } from '@angular-devkit/schematics';
 import * as ts from '@schematics/angular/node_modules/typescript';
-import { addDeclarationToModule } from '@schematics/angular/utility/ast-utils';
-import { InsertChange } from '@schematics/angular/utility/change';
+import { findNodes } from '@schematics/angular/utility/ast-utils';
+
+import {
+  addDeclarationsToModule,
+  addImports,
+  applyInsertChanges,
+  getFileSource,
+  getLastOccurrence,
+  getPageImportPath,
+  insertAfter,
+} from '../util';
 
 interface Options {
   path: string;
@@ -26,56 +34,36 @@ interface Options {
   styleext: string;
 }
 
-function addDeclarationToNgModule(sourceDir: string, path: string, name: string): Rule {
-  return (host: Tree) => {
-    const pathParts = path.split('/');
-    const moduleName = pathParts[0];
-    const pageName = pathParts[1];
+function insertParentExport(parentDirPath: string, name: string): Rule {
+  return (host) => {
+    const indexPath = `${parentDirPath}/index.ts`;
+    const source = getFileSource(host, indexPath);
+    const exportText = `\nexport * from './${strings.dasherize(name)}';`;
 
-    const modulePath = `${sourceDir}/${moduleName}/${moduleName}.module.ts`;
-
-    const text = host.read(modulePath);
-    if (text === null) {
-      throw new SchematicsException(`File ${modulePath} does not exist.`);
+    if (source.getText().includes(exportText)) {
+      return host;
     }
 
-    const sourceText = text.toString('utf-8');
-    const source = ts.createSourceFile(modulePath, sourceText, ts.ScriptTarget.Latest, true);
+    const lastExport = getLastOccurrence(findNodes(source, ts.SyntaxKind.ExportDeclaration));
 
-    const importPath = `./${pageName}`;
-    const classifiedName = strings.classify(`${name}Component`);
-    const declarationChanges = addDeclarationToModule(
-      source,
-      modulePath,
-      classifiedName,
-      importPath,
-    );
-
-    const declarationRecorder = host.beginUpdate(modulePath);
-    for (const change of declarationChanges) {
-      if (change instanceof InsertChange) {
-        declarationRecorder.insertLeft(change.pos, change.toAdd);
-      }
-    }
-    host.commitUpdate(declarationRecorder);
-
-    return host;
+    return applyInsertChanges(host, indexPath, [insertAfter(lastExport, exportText)]);
   };
 }
 
 function buildSelector(options: Options) {
-  let selector = strings.dasherize(options.name);
-  if (options.prefix) {
-    selector = `${options.prefix}-${selector}`;
-  }
-
-  return selector;
+  const selector = strings.dasherize(options.name);
+  return options.prefix ? `${options.prefix}-${selector}` : selector;
 }
 
 export function component(options: Options): Rule {
   const sourceDir = 'src/app';
   const selector = buildSelector(options);
   options.path = normalize(options.path);
+  const pathParts = options.path.split('/');
+  const moduleName = pathParts[0];
+  const pageName = pathParts[1];
+  const modulePath = `${sourceDir}/${moduleName}/${moduleName}.module.ts`;
+  const parentDirPath = `${sourceDir}/${options.path}`;
 
   return (host: Tree, context: SchematicContext) => {
     const templateSource = apply(url('../../component/files'), [
@@ -90,8 +78,12 @@ export function component(options: Options): Rule {
       move(sourceDir),
     ]);
 
+    const component = `${strings.classify(options.name)}Component`;
+
     return chain([
-      addDeclarationToNgModule(sourceDir, options.path, options.name),
+      addDeclarationsToModule(modulePath, [component]),
+      addImports(modulePath, getPageImportPath(pageName), [component], false, true),
+      insertParentExport(parentDirPath, options.name),
       mergeWith(templateSource),
     ])(host, context);
   };

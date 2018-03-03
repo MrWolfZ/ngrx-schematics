@@ -1,4 +1,8 @@
-export interface <%= classify(name) %>State {
+export interface <%= classify(name) %>Dto {
+
+}
+
+export interface <%= classify(name) %>State extends <%= classify(name) %>Dto {
 
 }
 
