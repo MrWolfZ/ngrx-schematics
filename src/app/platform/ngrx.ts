@@ -1,4 +1,4 @@
-import { Action, ActionReducerMap } from '@ngrx/store';
+import { Action, ActionReducer, ActionReducerMap } from '@ngrx/store';
 
 function keys<T>(t: T): (keyof T)[] {
   return Object.keys(t) as any;
@@ -16,4 +16,10 @@ export function callNestedReducers<TState>(state: TState, action: Action, reduce
   }, { ...(state as any) } as TState);
 
   return hasChanged ? newState : state;
+}
+
+export function createArrayReducer<TState>(reducer: ActionReducer<TState, any>): ActionReducer<TState[]> {
+  return (state = [], action) => {
+    return state.map(i => reducer(i, action));
+  };
 }
