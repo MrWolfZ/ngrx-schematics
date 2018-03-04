@@ -1,5 +1,4 @@
-<p>
-  <%= name %> works!
-  <br />
-  Component State: {{ state | json }}
-</p>
+<p><%= name %> works!</p>
+Component State:
+<pre>{{ state | json }}</pre>
+

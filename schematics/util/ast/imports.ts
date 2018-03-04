@@ -2,7 +2,7 @@ import { chain, Rule, Tree } from '@angular-devkit/schematics';
 import * as ts from '@schematics/angular/node_modules/typescript';
 import { findNodes } from '@schematics/angular/utility/ast-utils';
 
-import { applyInsertChanges, getFileSource, getLastOccurrence, insertAfter, insertBefore, InsertChange } from './util';
+import { applyInsertChanges, getFileSource, getLastOccurrence, insertAfter, insertAt, insertBefore, InsertChange } from './util';
 
 function insertSymbolToExistingImport(importsFromFile: ts.Node[], symbolName: string, importOnSingleLine: boolean): InsertChange[] {
   const identifiers: ts.Identifier[] = [];
@@ -68,6 +68,10 @@ function insertImport(
   const separator = insertAtBeginning ? '' : `;\n${separateWithExtraNewline ? '\n' : ''}`;
   const symbol = importOnSingleLine ? ` ${symbolName} ` : `\n  ${symbolName},\n`;
   const content = `${separator}import {${symbol}} from '${importPath}'${insertAtBeginning ? ';\n' : ''}`;
+
+  if (insertAtBeginning) {
+    return [insertAt(0, content)];
+  }
 
   const lastImport = getLastOccurrence(allImports);
   const lastStringLiteralInLastImport = getLastOccurrence(findNodes(lastImport, ts.SyntaxKind.StringLiteral));

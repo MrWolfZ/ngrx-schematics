@@ -47,6 +47,9 @@ function insertImport(source, symbolName, importPath, importOnSingleLine, separa
     const separator = insertAtBeginning ? '' : `;\n${separateWithExtraNewline ? '\n' : ''}`;
     const symbol = importOnSingleLine ? ` ${symbolName} ` : `\n  ${symbolName},\n`;
     const content = `${separator}import {${symbol}} from '${importPath}'${insertAtBeginning ? ';\n' : ''}`;
+    if (insertAtBeginning) {
+        return [util_1.insertAt(0, content)];
+    }
     const lastImport = util_1.getLastOccurrence(allImports);
     const lastStringLiteralInLastImport = util_1.getLastOccurrence(ast_utils_1.findNodes(lastImport, ts.SyntaxKind.StringLiteral));
     return [util_1.insertAfter(lastStringLiteralInLastImport, content)];

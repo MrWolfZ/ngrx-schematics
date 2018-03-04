@@ -1,5 +1,4 @@
-<p>
-  <%= name %> works!
-  <br />
-  Page State: {{ state$ | async | json }}
-</p>
+<p><%= name %> works!</p>
+Page State:
+<pre>{{ state$ | async | json }}</pre>
+
