@@ -18,11 +18,14 @@ import { findNodes } from '@schematics/angular/utility/ast-utils';
 import {
   addDeclarationsToModule,
   addImports,
+  addPropertyToExportObjectLiteral,
+  addPropertyToInterface,
   applyInsertChanges,
   getFileSource,
   getLastOccurrence,
   getPageImportPath,
   insertAfter,
+  modifyFunction,
 } from '../util';
 
 interface Options {
@@ -48,6 +51,65 @@ function insertParentExport(parentDirPath: string, name: string): Rule {
 
     return applyInsertChanges(host, indexPath, [insertAfter(lastExport, exportText)]);
   };
+}
+
+function getImportPath(name: string) {
+  return `./${name}`;
+}
+
+function getParentNameFromPath(parentDirPath: string) {
+  const parentDirPathParts = parentDirPath.split('/');
+  return parentDirPathParts[parentDirPathParts.length - 1].replace(/-page$/, '');
+}
+
+function insertInParentState(parentDirPath: string, name: string): Rule {
+  const parentName = getParentNameFromPath(parentDirPath);
+  const stateFilePath = `${parentDirPath}/${parentName}.state.ts`;
+  const parentDtoInterfaceNames = [
+    `${strings.classify(parentName)}PageDto`,
+    `${strings.classify(parentName)}Dto`,
+  ];
+
+  const parentStateInterfaceNames = [
+    `${strings.classify(parentName)}PageState`,
+    `${strings.classify(parentName)}State`,
+  ];
+
+  const parentInitialStateConstantNames = [
+    `INITIAL_${strings.underscore(parentName).toUpperCase()}_PAGE_STATE`,
+    `INITIAL_${strings.underscore(parentName).toUpperCase()}_STATE`,
+  ];
+
+  const dto = `${strings.classify(name)}Dto`;
+  const state = `${strings.classify(name)}State`;
+
+  return chain([
+    addPropertyToInterface(stateFilePath, n => parentDtoInterfaceNames.includes(n), strings.camelize(name), dto),
+    addPropertyToInterface(stateFilePath, n => parentStateInterfaceNames.includes(n), strings.camelize(name), state),
+    addPropertyToExportObjectLiteral(stateFilePath, n => parentInitialStateConstantNames.includes(n), strings.camelize(name), 'undefined!'),
+    addImports(stateFilePath, getImportPath(name), [
+      dto,
+      state,
+    ], true, true),
+  ]);
+}
+
+function insertInParentReducer(parentDirPath: string, name: string): Rule {
+  const parentName = getParentNameFromPath(parentDirPath);
+  const reducerFilePath = `${parentDirPath}/${parentName}.reducer.ts`;
+
+  const parentReducerNames = [
+    `${strings.camelize(parentName)}PageReducer`,
+    `${strings.camelize(parentName)}Reducer`,
+  ];
+
+  const reducer = `${strings.camelize(name)}Reducer`;
+
+  return chain([
+    modifyFunction(reducerFilePath, n => parentReducerNames.includes(n), () => []),
+    addImports(reducerFilePath, 'app/platform', ['callNestedReducers'], true, true),
+    addImports(reducerFilePath, getImportPath(name), [reducer], true, true),
+  ]);
 }
 
 function buildSelector(options: Options) {
@@ -84,7 +146,9 @@ export function component(options: Options): Rule {
       addDeclarationsToModule(modulePath, [component]),
       addImports(modulePath, getPageImportPath(pageName), [component], false, true),
       insertParentExport(parentDirPath, options.name),
-      mergeWith(templateSource),
+      insertInParentState(parentDirPath, options.name),
+      insertInParentReducer(parentDirPath, options.name),
+      false ? mergeWith(templateSource) : noop(),
     ])(host, context);
   };
 }

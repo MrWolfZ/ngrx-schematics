@@ -20,8 +20,8 @@ function insertSymbolToExistingImport(importsFromFile, symbolName, importOnSingl
             identifiers.push(identifier);
         }
     }
-    const sortedAlphabetically = [...identifiers].sort((l, r) => l.text < r.text ? -1 : l.text > r.text ? 1 : 0);
-    let successorNodeIdx = sortedAlphabetically.findIndex(i => i.text > symbolName);
+    const sortedAlphabetically = [...identifiers].sort((l, r) => l.text.toLowerCase() < r.text.toLowerCase() ? -1 : l.text.toLowerCase() > r.text.toLowerCase() ? 1 : 0);
+    let successorNodeIdx = sortedAlphabetically.findIndex(i => i.text.toLowerCase() > symbolName.toLowerCase());
     successorNodeIdx = successorNodeIdx === -1 ? sortedAlphabetically.length : successorNodeIdx;
     const separator = `${importOnSingleLine ? ' ' : '\n  '}`;
     if (successorNodeIdx === 0) {

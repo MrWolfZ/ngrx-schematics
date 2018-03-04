@@ -11,6 +11,20 @@ function getFileSource(host, filePath) {
     return ts.createSourceFile(filePath, sourceText, ts.ScriptTarget.Latest, true);
 }
 exports.getFileSource = getFileSource;
+function getNodeNameAsString(prop) {
+    if (!prop) {
+        return undefined;
+    }
+    switch (prop.kind) {
+        case ts.SyntaxKind.Identifier:
+            return prop.getText();
+        case ts.SyntaxKind.StringLiteral:
+            return prop.text;
+        default:
+            return undefined;
+    }
+}
+exports.getNodeNameAsString = getNodeNameAsString;
 function applyInsertChanges(host, filePath, changes) {
     const recorder = changes.reduce((r, c) => r.insertLeft(c.position, c.content), host.beginUpdate(filePath));
     host.commitUpdate(recorder);
@@ -52,20 +66,28 @@ function makeWhitespace(amount) {
     return new Array(amount).fill(' ').join('');
 }
 exports.makeWhitespace = makeWhitespace;
-function insertLastInArray(arrayNode, content, arrayIndentation) {
-    // check if already present
-    const symbolsArray = arrayNode.elements.map(node => node.getText());
-    if (symbolsArray.includes(content)) {
-        return [];
+function insertBetweenBrackets(text, position, content, indentation) {
+    const openingBracketOffset = /(\[|{)/.exec(text).index;
+    position += openingBracketOffset;
+    text = text.substring(openingBracketOffset);
+    let toInsert = `\n${makeWhitespace(indentation + 2)}${content}\n${makeWhitespace(indentation)}`;
+    if (/^(\[|{)[^\n\r]*(\r?\n)[^\n\r]*(\]|})$/.test(text)) {
+        // literal is like `[\n]` or `{\n}`
+        toInsert = `\n${makeWhitespace(indentation + 2)}${content}`;
     }
-    if (arrayNode.elements.length === 0) {
-        const position = arrayNode.getStart() + 1;
-        // we assume the empty array literal to be `[]` without any white space
-        return [insertAt(position, `\n${makeWhitespace(arrayIndentation + 2)}${content},\n${makeWhitespace(arrayIndentation)}`)];
+    else if (/^(\[|{)[^\n\r]*(\r?\n)[^\n\r]*(\r?\n)[^\n\r]*(\]|})$/.test(text)) {
+        // literal is like `[\n\n]` or `{\n\n}`
+        toInsert = `${makeWhitespace(indentation + 2)}${content}`;
+        // if line break contains carriage return we need to increment position by 2, otherwise just 1
+        position += /^(\[|{)[^\n\r]*(\r\n)/.test(text) ? 2 : 1;
     }
-    const lastElement = arrayNode.elements[arrayNode.elements.length - 1];
-    const position = lastElement.getEnd();
-    return [insertAt(position, `,\n${makeWhitespace(arrayIndentation + 2)}${content}`)];
+    return insertAt(position, toInsert);
 }
-exports.insertLastInArray = insertLastInArray;
+exports.insertBetweenBrackets = insertBetweenBrackets;
+function insertInEmptyArrayOrObject(node, content, indentation) {
+    const text = node.getText();
+    const position = node.getStart() + 1;
+    return insertBetweenBrackets(text, position, content, indentation);
+}
+exports.insertInEmptyArrayOrObject = insertInEmptyArrayOrObject;
 //# sourceMappingURL=util.js.map
