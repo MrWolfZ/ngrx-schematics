@@ -23,9 +23,12 @@ import {
   applyInsertChanges,
   componentNames as names,
   getFileSource,
+  getFunctionCall,
   getLastOccurrence,
   getPageOrComponentName,
   insertAfter,
+  insertAt,
+  insertLastInObject,
   isPagePath,
   modifyFunction,
   moduleNames,
@@ -89,14 +92,52 @@ function insertInParentState(parentDirPath: string, name: string): Rule {
   const state = names.state(name);
 
   return chain([
-    addPropertyToInterface(stateFilePath, n => parentDtoInterfaceNames.includes(n), strings.camelize(name), dto),
-    addPropertyToInterface(stateFilePath, n => parentStateInterfaceNames.includes(n), strings.camelize(name), state),
-    addPropertyToExportObjectLiteral(stateFilePath, n => parentInitialStateConstantNames.includes(n), strings.camelize(name), 'undefined!'),
+    addPropertyToInterface(stateFilePath, n => parentDtoInterfaceNames.includes(n), names.stateName(name), dto),
+    addPropertyToInterface(stateFilePath, n => parentStateInterfaceNames.includes(n), names.stateName(name), state),
+    addPropertyToExportObjectLiteral(stateFilePath, n => parentInitialStateConstantNames.includes(n), names.stateName(name), 'undefined!'),
     addImports(stateFilePath, getImportPath(name), [
       dto,
       state,
     ], true, true),
   ]);
+}
+
+const CALL_NESTED_REDUCERS_FUNCTION_NAME = 'callNestedReducers';
+
+function addInitialNestedReducerCallToExistingCall(node: ts.FunctionBody, name: string) {
+  const existingCall = getFunctionCall(node, CALL_NESTED_REDUCERS_FUNCTION_NAME);
+
+  const reducersLiteral = findNodes(existingCall, ts.SyntaxKind.ObjectLiteralExpression)
+    .map(n => n as ts.ObjectLiteralExpression)[0];
+
+  return insertLastInObject(reducersLiteral, names.stateName(name), names.reducer(name), 2);
+}
+
+function addInitialNestedReducerCall(node: ts.FunctionBody, name: string) {
+  if (node.getText().includes(CALL_NESTED_REDUCERS_FUNCTION_NAME)) {
+    return addInitialNestedReducerCallToExistingCall(node, name);
+  }
+
+  const content = `
+  state = callNestedReducers(state, action, {
+    ${names.stateName(name)}: ${names.reducer(name)},
+  });
+`;
+
+  return [insertAt(node.getStart() + 1, content)];
+}
+
+// tslint:disable-next-line:variable-name
+function addNestedReducerCallDuringInitialization(_node: ts.FunctionBody, _name: string) {
+  return [];
+}
+
+function addNestedReducerCalls(node: ts.FunctionDeclaration, name: string) {
+  const body = node.body!;
+  return [
+    ...addInitialNestedReducerCall(body, name),
+    ...addNestedReducerCallDuringInitialization(body, name),
+  ];
 }
 
 function insertInParentReducer(parentDirPath: string, name: string): Rule {
@@ -112,8 +153,8 @@ function insertInParentReducer(parentDirPath: string, name: string): Rule {
   const reducer = names.reducer(name);
 
   return chain([
-    modifyFunction(reducerFilePath, n => parentReducerNames.includes(n), () => []),
-    addImports(reducerFilePath, 'app/platform', ['callNestedReducers'], true, true),
+    modifyFunction(reducerFilePath, n => parentReducerNames.includes(n), n => addNestedReducerCalls(n, name)),
+    addImports(reducerFilePath, 'app/platform', [CALL_NESTED_REDUCERS_FUNCTION_NAME], true, true),
     addImports(reducerFilePath, getImportPath(name), [reducer], true, true),
   ]);
 }

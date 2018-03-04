@@ -50,6 +50,7 @@ export const componentNames = {
   reducer: (name: string) => `${strings.camelize(name)}Reducer`,
   dto: (name: string) => `${strings.classify(name)}Dto`,
   state: (name: string) => `${strings.classify(name)}State`,
+  stateName: (name: string) => `${strings.camelize(name)}`,
   initialStateConstant: (name: string) => `INITIAL_${strings.underscore(name).toUpperCase()}_STATE`,
   actions: (name: string) => `${strings.classify(name)}Actions`,
   initializationAction: (name: string) => `Initialize${strings.classify(name)}Action`,

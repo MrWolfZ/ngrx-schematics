@@ -43,14 +43,43 @@ function insertInParentState(parentDirPath, name) {
     const dto = util_1.componentNames.dto(name);
     const state = util_1.componentNames.state(name);
     return schematics_1.chain([
-        util_1.addPropertyToInterface(stateFilePath, n => parentDtoInterfaceNames.includes(n), core_1.strings.camelize(name), dto),
-        util_1.addPropertyToInterface(stateFilePath, n => parentStateInterfaceNames.includes(n), core_1.strings.camelize(name), state),
-        util_1.addPropertyToExportObjectLiteral(stateFilePath, n => parentInitialStateConstantNames.includes(n), core_1.strings.camelize(name), 'undefined!'),
+        util_1.addPropertyToInterface(stateFilePath, n => parentDtoInterfaceNames.includes(n), util_1.componentNames.stateName(name), dto),
+        util_1.addPropertyToInterface(stateFilePath, n => parentStateInterfaceNames.includes(n), util_1.componentNames.stateName(name), state),
+        util_1.addPropertyToExportObjectLiteral(stateFilePath, n => parentInitialStateConstantNames.includes(n), util_1.componentNames.stateName(name), 'undefined!'),
         util_1.addImports(stateFilePath, getImportPath(name), [
             dto,
             state,
         ], true, true),
     ]);
+}
+const CALL_NESTED_REDUCERS_FUNCTION_NAME = 'callNestedReducers';
+function addInitialNestedReducerCallToExistingCall(node, name) {
+    const existingCall = util_1.getFunctionCall(node, CALL_NESTED_REDUCERS_FUNCTION_NAME);
+    const reducersLiteral = ast_utils_1.findNodes(existingCall, ts.SyntaxKind.ObjectLiteralExpression)
+        .map(n => n)[0];
+    return util_1.insertLastInObject(reducersLiteral, util_1.componentNames.stateName(name), util_1.componentNames.reducer(name), 2);
+}
+function addInitialNestedReducerCall(node, name) {
+    if (node.getText().includes(CALL_NESTED_REDUCERS_FUNCTION_NAME)) {
+        return addInitialNestedReducerCallToExistingCall(node, name);
+    }
+    const content = `
+  state = callNestedReducers(state, action, {
+    ${util_1.componentNames.stateName(name)}: ${util_1.componentNames.reducer(name)},
+  });
+`;
+    return [util_1.insertAt(node.getStart() + 1, content)];
+}
+// tslint:disable-next-line:variable-name
+function addNestedReducerCallDuringInitialization(_node, _name) {
+    return [];
+}
+function addNestedReducerCalls(node, name) {
+    const body = node.body;
+    return [
+        ...addInitialNestedReducerCall(body, name),
+        ...addNestedReducerCallDuringInitialization(body, name),
+    ];
 }
 function insertInParentReducer(parentDirPath, name) {
     const isPage = util_1.isPagePath(parentDirPath);
@@ -62,8 +91,8 @@ function insertInParentReducer(parentDirPath, name) {
     ];
     const reducer = util_1.componentNames.reducer(name);
     return schematics_1.chain([
-        util_1.modifyFunction(reducerFilePath, n => parentReducerNames.includes(n), () => []),
-        util_1.addImports(reducerFilePath, 'app/platform', ['callNestedReducers'], true, true),
+        util_1.modifyFunction(reducerFilePath, n => parentReducerNames.includes(n), n => addNestedReducerCalls(n, name)),
+        util_1.addImports(reducerFilePath, 'app/platform', [CALL_NESTED_REDUCERS_FUNCTION_NAME], true, true),
         util_1.addImports(reducerFilePath, getImportPath(name), [reducer], true, true),
     ]);
 }

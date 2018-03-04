@@ -17,4 +17,14 @@ function modifyFunction(filePath, functionNameFilter, modificator) {
     };
 }
 exports.modifyFunction = modifyFunction;
+function getFunctionCall(node, functionName) {
+    const functionNode = ast_utils_1.findNodes(node, ts.SyntaxKind.CallExpression)
+        .map(n => n)
+        .find(n => util_1.getNodeNameAsString(n.expression) === functionName);
+    if (!functionNode) {
+        throw new schematics_1.SchematicsException(`could not find function call to ${functionName}`);
+    }
+    return node;
+}
+exports.getFunctionCall = getFunctionCall;
 //# sourceMappingURL=function.js.map

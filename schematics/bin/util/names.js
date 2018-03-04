@@ -49,6 +49,7 @@ exports.componentNames = {
     reducer: (name) => `${core_1.strings.camelize(name)}Reducer`,
     dto: (name) => `${core_1.strings.classify(name)}Dto`,
     state: (name) => `${core_1.strings.classify(name)}State`,
+    stateName: (name) => `${core_1.strings.camelize(name)}`,
     initialStateConstant: (name) => `INITIAL_${core_1.strings.underscore(name).toUpperCase()}_STATE`,
     actions: (name) => `${core_1.strings.classify(name)}Actions`,
     initializationAction: (name) => `Initialize${core_1.strings.classify(name)}Action`,
