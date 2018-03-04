@@ -1,0 +1,18 @@
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { Store } from '@ngrx/store';
+import { Observable } from 'rxjs/Observable';
+
+import { <% if(state(name) <= 'RootState') { %><%= state(name) %>, <% } %>RootState<% if(state(name) > 'RootState') { %>, <%= state(name) %><% } %> } from './<%= stateFileNoExt(name) %>';
+
+@Component({
+  templateUrl: './<%= componentTemplateFile(name) %>',
+  styleUrls: ['./<%= componentFileNoExt(name) %>.<%= styleext %>'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class <%= component(name) %> {
+  state$: Observable<<%= state(name) %>>;
+
+  constructor(store: Store<RootState>) {
+    this.state$ = store.select(s => s.<%= featureStateName(name) %>);
+  }
+}

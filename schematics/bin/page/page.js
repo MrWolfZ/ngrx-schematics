@@ -27,18 +27,18 @@ function insertRoute(routingPath, name) {
     return (host) => {
         const source = util_1.getFileSource(host, routingPath);
         const routesArray = ast_utils_1.findNodes(source, ts.SyntaxKind.ArrayLiteralExpression, 1)[0];
-        if (routesArray.elements.some(node => node.getText().includes(`component: ${`${core_1.strings.classify(name)}Page`}`))) {
+        if (routesArray.elements.some(node => node.getText().includes(`component: ${util_1.pageNames.component(name)}`))) {
             return host;
         }
         let content = `{
-    path: '${core_1.strings.dasherize(name)}',
-    component: ${`${core_1.strings.classify(name)}Page`},
-    canActivate: [${`${core_1.strings.classify(name)}PageInitializationGuard`}],
+    path: '${util_1.pageNames.route(name)}',
+    component: ${util_1.pageNames.component(name)},
+    canActivate: [${util_1.pageNames.guard(name)}],
   }`;
         if (routesArray.elements.length === 0) {
             content = `{
     path: '',
-    redirectTo: '${core_1.strings.dasherize(name)}',
+    redirectTo: '${util_1.pageNames.route(name)}',
     pathMatch: 'full',
   },\n  ${content}`;
         }
@@ -47,25 +47,25 @@ function insertRoute(routingPath, name) {
 }
 function page(options) {
     const sourceDir = 'src/app';
-    const modulePath = `${sourceDir}/${options.module}/${options.module}.module.ts`;
-    const routingPath = `${sourceDir}/${options.module}/${options.module}.routing.ts`;
+    const modulePath = `${sourceDir}/${util_1.moduleNames.dir(options.module)}/${util_1.moduleNames.moduleFile(options.module)}`;
+    const routingPath = `${sourceDir}/${util_1.moduleNames.dir(options.module)}/${util_1.moduleNames.routingFile(options.module)}`;
     return (host, context) => {
         const templateSource = schematics_1.apply(schematics_1.url('../../page/files'), [
-            schematics_1.template(Object.assign({}, core_1.strings, { toUpperCase: (s) => s.toUpperCase() }, options)),
+            schematics_1.template(Object.assign({}, core_1.strings, options, util_1.pageNames, { moduleDir: util_1.moduleNames.dir })),
             schematics_1.move(sourceDir),
         ]);
-        const page = `${core_1.strings.classify(options.name)}Page`;
-        const guard = `${core_1.strings.classify(options.name)}PageInitializationGuard`;
-        const featureStateNameConstant = `${core_1.strings.underscore(options.name).toUpperCase()}_PAGE_STATE_FEATURE_NAME`;
-        const reducer = `${core_1.strings.camelize(options.name)}PageReducer`;
-        const effects = `${core_1.strings.classify(options.name)}PageEffects`;
+        const page = util_1.pageNames.component(options.name);
+        const guard = util_1.pageNames.guard(options.name);
+        const featureStateNameConstant = util_1.pageNames.featureStateNameConstant(options.name);
+        const reducer = util_1.pageNames.reducer(options.name);
+        const effects = util_1.pageNames.effects(options.name);
         const featureStateImport = `StoreModule.forFeature(${featureStateNameConstant}, ${reducer})`;
         return schematics_1.chain([
             util_1.addDeclarationsToModule(modulePath, [page]),
             util_1.addProvidersToModule(modulePath, [guard]),
             util_1.addImportsToModule(modulePath, [featureStateImport]),
             insertEffect(modulePath, effects),
-            util_1.addImports(modulePath, util_1.getPageImportPath(options.name), [
+            util_1.addImports(modulePath, `./${util_1.pageNames.dir(options.name)}`, [
                 page,
                 guard,
                 featureStateNameConstant,
@@ -73,7 +73,7 @@ function page(options) {
                 effects,
             ], false, true),
             insertRoute(routingPath, options.name),
-            util_1.addImports(routingPath, util_1.getPageImportPath(options.name), [
+            util_1.addImports(routingPath, `./${util_1.pageNames.dir(options.name)}`, [
                 page,
                 guard,
             ], true, true),

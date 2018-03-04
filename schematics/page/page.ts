@@ -22,8 +22,10 @@ import {
   applyInsertChanges,
   getDecoratorPropertyAssignmentNode,
   getFileSource,
-  getPageImportPath,
   insertLastInArray,
+  moduleNames,
+  pageNames as names,
+  pageNames,
 } from '../util';
 
 interface Options {
@@ -63,20 +65,20 @@ function insertRoute(routingPath: string, name: string): Rule {
 
     const routesArray = findNodes(source, ts.SyntaxKind.ArrayLiteralExpression, 1)[0] as ts.ArrayLiteralExpression;
 
-    if (routesArray.elements.some(node => node.getText().includes(`component: ${`${strings.classify(name)}Page`}`))) {
+    if (routesArray.elements.some(node => node.getText().includes(`component: ${names.component(name)}`))) {
       return host;
     }
 
     let content = `{
-    path: '${strings.dasherize(name)}',
-    component: ${`${strings.classify(name)}Page`},
-    canActivate: [${`${strings.classify(name)}PageInitializationGuard`}],
+    path: '${names.route(name)}',
+    component: ${names.component(name)},
+    canActivate: [${names.guard(name)}],
   }`;
 
     if (routesArray.elements.length === 0) {
       content = `{
     path: '',
-    redirectTo: '${strings.dasherize(name)}',
+    redirectTo: '${names.route(name)}',
     pathMatch: 'full',
   },\n  ${content}`;
     }
@@ -87,24 +89,25 @@ function insertRoute(routingPath: string, name: string): Rule {
 
 export function page(options: Options): Rule {
   const sourceDir = 'src/app';
-  const modulePath = `${sourceDir}/${options.module}/${options.module}.module.ts`;
-  const routingPath = `${sourceDir}/${options.module}/${options.module}.routing.ts`;
+  const modulePath = `${sourceDir}/${moduleNames.dir(options.module)}/${moduleNames.moduleFile(options.module)}`;
+  const routingPath = `${sourceDir}/${moduleNames.dir(options.module)}/${moduleNames.routingFile(options.module)}`;
 
   return (host: Tree, context: SchematicContext) => {
     const templateSource = apply(url('../../page/files'), [
       template({
         ...strings,
-        toUpperCase: (s: string) => s.toUpperCase(),
         ...options,
+        ...names,
+        moduleDir: moduleNames.dir,
       }),
       move(sourceDir),
     ]);
 
-    const page = `${strings.classify(options.name)}Page`;
-    const guard = `${strings.classify(options.name)}PageInitializationGuard`;
-    const featureStateNameConstant = `${strings.underscore(options.name).toUpperCase()}_PAGE_STATE_FEATURE_NAME`;
-    const reducer = `${strings.camelize(options.name)}PageReducer`;
-    const effects = `${strings.classify(options.name)}PageEffects`;
+    const page = names.component(options.name);
+    const guard = names.guard(options.name);
+    const featureStateNameConstant = names.featureStateNameConstant(options.name);
+    const reducer = names.reducer(options.name);
+    const effects = names.effects(options.name);
     const featureStateImport = `StoreModule.forFeature(${featureStateNameConstant}, ${reducer})`;
 
     return chain([
@@ -112,7 +115,7 @@ export function page(options: Options): Rule {
       addProvidersToModule(modulePath, [guard]),
       addImportsToModule(modulePath, [featureStateImport]),
       insertEffect(modulePath, effects),
-      addImports(modulePath, getPageImportPath(options.name), [
+      addImports(modulePath, `./${pageNames.dir(options.name)}`, [
         page,
         guard,
         featureStateNameConstant,
@@ -120,7 +123,7 @@ export function page(options: Options): Rule {
         effects,
       ], false, true),
       insertRoute(routingPath, options.name),
-      addImports(routingPath, getPageImportPath(options.name), [
+      addImports(routingPath, `./${pageNames.dir(options.name)}`, [
         page,
         guard,
       ], true, true),

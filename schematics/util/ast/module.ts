@@ -58,10 +58,6 @@ export function addSymbolsToNgModule(modulePath: string, metadataField: string, 
   return chain(symbolNames.map(t => addSymbolToNgModule(modulePath, metadataField, t)));
 }
 
-export function getPageImportPath(pageName: string) {
-  return `./${pageName.replace(/-page$/, '')}-page`;
-}
-
 export function addDeclarationsToModule(modulePath: string, symbolNames: string[]): Rule {
   return addSymbolsToNgModule(modulePath, 'declarations', symbolNames);
 }

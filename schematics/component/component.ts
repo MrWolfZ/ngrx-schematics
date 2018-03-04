@@ -21,11 +21,15 @@ import {
   addPropertyToExportObjectLiteral,
   addPropertyToInterface,
   applyInsertChanges,
+  componentNames as names,
   getFileSource,
   getLastOccurrence,
-  getPageImportPath,
+  getPageOrComponentName,
   insertAfter,
+  isPagePath,
   modifyFunction,
+  moduleNames,
+  pageNames,
 } from '../util';
 
 interface Options {
@@ -41,7 +45,7 @@ function insertParentExport(parentDirPath: string, name: string): Rule {
   return (host) => {
     const indexPath = `${parentDirPath}/index.ts`;
     const source = getFileSource(host, indexPath);
-    const exportText = `\nexport * from './${strings.dasherize(name)}';`;
+    const exportText = `\nexport * from './${names.dir(name)}';`;
 
     if (source.getText().includes(exportText)) {
       return host;
@@ -59,29 +63,30 @@ function getImportPath(name: string) {
 
 function getParentNameFromPath(parentDirPath: string) {
   const parentDirPathParts = parentDirPath.split('/');
-  return parentDirPathParts[parentDirPathParts.length - 1].replace(/-page$/, '');
+  return getPageOrComponentName(parentDirPathParts[parentDirPathParts.length - 1]);
 }
 
 function insertInParentState(parentDirPath: string, name: string): Rule {
+  const isPage = isPagePath(parentDirPath);
   const parentName = getParentNameFromPath(parentDirPath);
-  const stateFilePath = `${parentDirPath}/${parentName}.state.ts`;
+  const stateFilePath = `${parentDirPath}/${isPage ? pageNames.stateFile(parentName) : names.stateFile(parentName)}`;
   const parentDtoInterfaceNames = [
-    `${strings.classify(parentName)}PageDto`,
-    `${strings.classify(parentName)}Dto`,
+    pageNames.dto(parentName),
+    names.dto(parentName),
   ];
 
   const parentStateInterfaceNames = [
-    `${strings.classify(parentName)}PageState`,
-    `${strings.classify(parentName)}State`,
+    pageNames.state(parentName),
+    names.state(parentName),
   ];
 
   const parentInitialStateConstantNames = [
-    `INITIAL_${strings.underscore(parentName).toUpperCase()}_PAGE_STATE`,
-    `INITIAL_${strings.underscore(parentName).toUpperCase()}_STATE`,
+    pageNames.initialStateConstant(parentName),
+    names.initialStateConstant(parentName),
   ];
 
-  const dto = `${strings.classify(name)}Dto`;
-  const state = `${strings.classify(name)}State`;
+  const dto = names.dto(name);
+  const state = names.state(name);
 
   return chain([
     addPropertyToInterface(stateFilePath, n => parentDtoInterfaceNames.includes(n), strings.camelize(name), dto),
@@ -95,15 +100,16 @@ function insertInParentState(parentDirPath: string, name: string): Rule {
 }
 
 function insertInParentReducer(parentDirPath: string, name: string): Rule {
+  const isPage = isPagePath(parentDirPath);
   const parentName = getParentNameFromPath(parentDirPath);
-  const reducerFilePath = `${parentDirPath}/${parentName}.reducer.ts`;
+  const reducerFilePath = `${parentDirPath}/${isPage ? pageNames.reducerFile(parentName) : names.reducerFile(parentName)}`;
 
   const parentReducerNames = [
-    `${strings.camelize(parentName)}PageReducer`,
-    `${strings.camelize(parentName)}Reducer`,
+    pageNames.reducer(parentName),
+    names.reducer(parentName),
   ];
 
-  const reducer = `${strings.camelize(name)}Reducer`;
+  const reducer = names.reducer(name);
 
   return chain([
     modifyFunction(reducerFilePath, n => parentReducerNames.includes(n), () => []),
@@ -112,19 +118,14 @@ function insertInParentReducer(parentDirPath: string, name: string): Rule {
   ]);
 }
 
-function buildSelector(options: Options) {
-  const selector = strings.dasherize(options.name);
-  return options.prefix ? `${options.prefix}-${selector}` : selector;
-}
-
 export function component(options: Options): Rule {
   const sourceDir = 'src/app';
-  const selector = buildSelector(options);
+  const selector = names.selector(options.name, options.prefix);
   options.path = normalize(options.path);
   const pathParts = options.path.split('/');
-  const moduleName = pathParts[0];
-  const pageName = pathParts[1];
-  const modulePath = `${sourceDir}/${moduleName}/${moduleName}.module.ts`;
+  const moduleName = moduleNames.dirToName(pathParts[0]);
+  const pageName = pageNames.dirToName(pathParts[1]);
+  const modulePath = `${sourceDir}/${moduleNames.dir(moduleName)}/${moduleNames.moduleFile(moduleName)}`;
   const parentDirPath = `${sourceDir}/${options.path}`;
 
   return (host: Tree, context: SchematicContext) => {
@@ -133,22 +134,22 @@ export function component(options: Options): Rule {
       options.inlineTemplate ? filter(path => !path.endsWith('.html')) : noop(),
       template({
         ...strings,
-        toUpperCase: (s: string) => s.toUpperCase(),
         ...options,
         selector,
+        ...names,
       }),
       move(sourceDir),
     ]);
 
-    const component = `${strings.classify(options.name)}Component`;
+    const component = names.component(options.name);
 
     return chain([
       addDeclarationsToModule(modulePath, [component]),
-      addImports(modulePath, getPageImportPath(pageName), [component], false, true),
+      addImports(modulePath, `./${pageNames.dir(pageName)}`, [component], false, true),
       insertParentExport(parentDirPath, options.name),
       insertInParentState(parentDirPath, options.name),
       insertInParentReducer(parentDirPath, options.name),
-      false ? mergeWith(templateSource) : noop(),
+      mergeWith(templateSource),
     ])(host, context);
   };
 }

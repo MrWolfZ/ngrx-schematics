@@ -1,0 +1,17 @@
+import { Injectable } from '@angular/core';
+import { CanActivate } from '@angular/router';
+import { ActionsSubject } from '@ngrx/store';
+
+import { <%= initializationAction(name) %>, <%= loadAction(name) %> } from './<%= actionsFileNoExt(name) %>';
+
+@Injectable()
+export class <%= guard(name) %> implements CanActivate {
+  constructor(private actionsSubject: ActionsSubject) { }
+
+  canActivate() {
+    this.actionsSubject.next(new <%= loadAction(name) %>());
+    return this.actionsSubject
+      .first(a => a.type === <%= initializationAction(name) %>.TYPE)
+      .map(() => true);
+  }
+}

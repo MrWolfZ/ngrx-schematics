@@ -4,15 +4,15 @@ import { RouterModule } from '@angular/router';
 import { EffectsModule } from '@ngrx/effects';
 import { StoreModule } from '@ngrx/store';
 
-import { <%= camelize(name) %>Routes } from './<%= dasherize(name) %>.routing';
+import { <%= routes(name) %> } from './<%= routingFileNoExt(name) %>';
 
 @NgModule({
   declarations: [],
   imports: [
     CommonModule,
-    RouterModule.forChild(<%= camelize(name) %>Routes),
+    RouterModule.forChild(<%= routes(name) %>),
     EffectsModule.forFeature([]),
   ],
   providers: [],
 })
-export class <%= classify(name) %>Module { }
+export class <%= moduleClass(name) %> { }

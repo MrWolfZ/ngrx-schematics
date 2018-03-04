@@ -1,5 +1,5 @@
 <p>
-  <%= dasherize(name) %> works!
+  <%= name %> works!
   <br />
   Component State: {{ state | json }}
 </p>

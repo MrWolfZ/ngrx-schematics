@@ -1,5 +1,5 @@
 <p>
-  <%= dasherize(name) %>-page works!
+  <%= name %> works!
   <br />
   Page State: {{ state$ | async | json }}
 </p>

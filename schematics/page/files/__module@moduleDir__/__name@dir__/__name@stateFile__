@@ -1,0 +1,19 @@
+import { RootState as AppRootState } from '../../app.state';
+
+export interface RootState extends AppRootState {
+  <%= featureStateName(name) %>: <%= state(name) %>;
+}
+
+export interface <%= dto(name) %> {
+
+}
+
+export interface <%= state(name) %> extends <%= dto(name) %> {
+
+}
+
+export const <%= initialStateConstant(name) %>: <%= state(name) %> = {
+
+};
+
+export const <%= featureStateNameConstant(name) %> = '<%= featureStateName(name) %>';

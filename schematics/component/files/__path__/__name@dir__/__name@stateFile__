@@ -1,0 +1,11 @@
+export interface <%= dto(name) %> {
+
+}
+
+export interface <%= state(name) %> extends <%= dto(name) %> {
+
+}
+
+export const <%= initialStateConstant(name) %>: <%= state(name) %> = {
+
+};

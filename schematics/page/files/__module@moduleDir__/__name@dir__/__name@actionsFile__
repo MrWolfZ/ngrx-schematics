@@ -1,0 +1,22 @@
+import { Action } from '@ngrx/store';
+
+import { <%= dto(name) %> } from './<%= stateFileNoExt(name) %>';
+
+export class <%= loadAction(name) %> implements Action {
+  static readonly TYPE = '<%= moduleDir(module) %>/<%= dir(name) %>/LOAD_DATA';
+  readonly type = <%= loadAction(name) %>.TYPE;
+}
+
+export class <%= initializationAction(name) %> implements Action {
+  static readonly TYPE = '<%= moduleDir(module) %>/<%= dir(name) %>/INITIALIZE';
+  readonly type = <%= initializationAction(name) %>.TYPE;
+
+  constructor(
+    public dto: <%= dto(name) %>,
+  ) {}
+}
+
+export type <%= actions(name) %> =
+  | <%= loadAction(name) %>
+  | <%= initializationAction(name) %>
+  ;

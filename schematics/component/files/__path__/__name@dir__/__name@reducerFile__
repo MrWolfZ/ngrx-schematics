@@ -1,0 +1,15 @@
+import { <% if(actions(name) <= initializationAction(name)) { %><%= actions(name) %>, <% } %><%= initializationAction(name) %><% if(actions(name) > initializationAction(name)) { %>, <%= actions(name) %><% } %> } from './<%= actionsFileNoExt(name) %>';
+import { <% if(state(name) <= initialStateConstant(name)) { %><%= state(name) %>, <% } %><%= initialStateConstant(name) %><% if(state(name) > initialStateConstant(name)) { %>, <%= state(name) %><% } %> } from './<%= stateFileNoExt(name) %>';
+
+export function <%= reducer(name) %>(state = <%= initialStateConstant(name) %>, action: <%= actions(name) %>): <%= state(name) %> {
+  switch (action.type) {
+    case <%= initializationAction(name) %>.TYPE:
+      return {
+        ...state,
+        ...action.dto,
+      };
+
+    default:
+      return state;
+  }
+}

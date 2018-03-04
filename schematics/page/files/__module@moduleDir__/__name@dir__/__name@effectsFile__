@@ -1,0 +1,20 @@
+import { Injectable } from '@angular/core';
+import { Actions, Effect } from '@ngrx/effects';
+import { Action } from '@ngrx/store';
+import { Observable } from 'rxjs/Observable';
+
+import { <%= initializationAction(name) %>, <%= loadAction(name) %> } from './<%= actionsFileNoExt(name) %>';
+import { <%= dto(name) %> } from './<%= stateFileNoExt(name) %>';
+
+@Injectable()
+export class <%= effects(name) %> {
+
+  @Effect()
+  loadPageData$: Observable<Action> = this.actions$
+    .ofType(<%= loadAction(name) %>.TYPE)
+    .flatMap(() =>
+      Observable.of(new <%= initializationAction(name) %>({} as <%= dto(name) %>)).delay(100)
+    );
+
+  constructor(private actions$: Actions) { }
+}

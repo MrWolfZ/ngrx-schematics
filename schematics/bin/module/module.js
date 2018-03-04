@@ -9,17 +9,17 @@ function insertRoute(routingPath, name) {
     return (host) => {
         const source = util_1.getFileSource(host, routingPath);
         const routesArray = ast_utils_1.findNodes(source, ts.SyntaxKind.ArrayLiteralExpression, 1)[0];
-        if (routesArray.elements.some(node => node.getText().includes(`#${core_1.strings.classify(name)}Module`))) {
+        if (routesArray.elements.some(node => node.getText().includes(`#${util_1.moduleNames.moduleClass(name)}`))) {
             return host;
         }
         let content = `{
-    path: '${core_1.strings.dasherize(name)}',
-    loadChildren: 'app/${core_1.strings.dasherize(name)}/${core_1.strings.dasherize(name)}.module#${core_1.strings.classify(name)}Module',
+    path: '${util_1.moduleNames.route(name)}',
+    loadChildren: 'app/${util_1.moduleNames.dir(name)}/${util_1.moduleNames.moduleFileNoExt(name)}#${util_1.moduleNames.moduleClass(name)}',
   }`;
         if (routesArray.elements.length === 0) {
             content = `{
     path: '',
-    redirectTo: '${core_1.strings.dasherize(name)}',
+    redirectTo: '${util_1.moduleNames.route(name)}',
     pathMatch: 'full',
   },\n  ${content}`;
         }
@@ -31,7 +31,7 @@ function module(options) {
     const routingPath = `${sourceDir}/app.routing.ts`;
     return (host, context) => {
         const templateSource = schematics_1.apply(schematics_1.url('../../module/files'), [
-            schematics_1.template(Object.assign({}, core_1.strings, { toUpperCase: (s) => s.toUpperCase() }, options)),
+            schematics_1.template(Object.assign({}, core_1.strings, options, util_1.moduleNames)),
             schematics_1.move(sourceDir),
         ]);
         return schematics_1.chain([

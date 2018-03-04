@@ -36,10 +36,6 @@ function addSymbolsToNgModule(modulePath, metadataField, symbolNames) {
     return schematics_1.chain(symbolNames.map(t => addSymbolToNgModule(modulePath, metadataField, t)));
 }
 exports.addSymbolsToNgModule = addSymbolsToNgModule;
-function getPageImportPath(pageName) {
-    return `./${pageName.replace(/-page$/, '')}-page`;
-}
-exports.getPageImportPath = getPageImportPath;
 function addDeclarationsToModule(modulePath, symbolNames) {
     return addSymbolsToNgModule(modulePath, 'declarations', symbolNames);
 }

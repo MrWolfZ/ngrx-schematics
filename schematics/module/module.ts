@@ -17,6 +17,7 @@ import {
   applyInsertChanges,
   getFileSource,
   insertLastInArray,
+  moduleNames as names,
 } from '../util';
 
 interface Options {
@@ -29,19 +30,19 @@ function insertRoute(routingPath: string, name: string): Rule {
 
     const routesArray = findNodes(source, ts.SyntaxKind.ArrayLiteralExpression, 1)[0] as ts.ArrayLiteralExpression;
 
-    if (routesArray.elements.some(node => node.getText().includes(`#${strings.classify(name)}Module`))) {
+    if (routesArray.elements.some(node => node.getText().includes(`#${names.moduleClass(name)}`))) {
       return host;
     }
 
     let content = `{
-    path: '${strings.dasherize(name)}',
-    loadChildren: 'app/${strings.dasherize(name)}/${strings.dasherize(name)}.module#${strings.classify(name)}Module',
+    path: '${names.route(name)}',
+    loadChildren: 'app/${names.dir(name)}/${names.moduleFileNoExt(name)}#${names.moduleClass(name)}',
   }`;
 
     if (routesArray.elements.length === 0) {
       content = `{
     path: '',
-    redirectTo: '${strings.dasherize(name)}',
+    redirectTo: '${names.route(name)}',
     pathMatch: 'full',
   },\n  ${content}`;
     }
@@ -58,8 +59,8 @@ export function module(options: Options): Rule {
     const templateSource = apply(url('../../module/files'), [
       template({
         ...strings,
-        toUpperCase: (s: string) => s.toUpperCase(),
         ...options,
+        ...names,
       }),
       move(sourceDir),
     ]);
