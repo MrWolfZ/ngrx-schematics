@@ -70,15 +70,23 @@ function addInitialNestedReducerCall(node, name) {
 `;
     return [util_1.insertAt(node.getStart() + 1, content)];
 }
-// tslint:disable-next-line:variable-name
-function addNestedReducerCallDuringInitialization(_node, _name) {
-    return [];
+function addNestedReducerCallDuringInitialization(node, parentName, name) {
+    const caseClause = ast_utils_1.findNodes(node, ts.SyntaxKind.CaseClause)
+        .map(n => n)
+        .find(n => n.getText().includes(util_1.pageNames.initializationAction(parentName)) || n.getText().includes(util_1.componentNames.initializationAction(parentName)));
+    if (!caseClause) {
+        throw new schematics_1.SchematicsException('Could not find case clause for initialization action');
+    }
+    const initializationExpression = ast_utils_1.findNodes(caseClause, ts.SyntaxKind.ObjectLiteralExpression)
+        .map(n => n)[0];
+    const reducerCall = `${util_1.componentNames.reducer(name)}(state.${util_1.componentNames.stateName(name)}, new ${util_1.componentNames.initializationAction(name)}(action.dto.${util_1.componentNames.stateName(name)}))`;
+    return util_1.insertLastInObject(initializationExpression, util_1.componentNames.stateName(name), reducerCall, 6);
 }
-function addNestedReducerCalls(node, name) {
+function addNestedReducerCalls(node, parentName, name) {
     const body = node.body;
     return [
         ...addInitialNestedReducerCall(body, name),
-        ...addNestedReducerCallDuringInitialization(body, name),
+        ...addNestedReducerCallDuringInitialization(body, parentName, name),
     ];
 }
 function insertInParentReducer(parentDirPath, name) {
@@ -89,11 +97,10 @@ function insertInParentReducer(parentDirPath, name) {
         util_1.pageNames.reducer(parentName),
         util_1.componentNames.reducer(parentName),
     ];
-    const reducer = util_1.componentNames.reducer(name);
     return schematics_1.chain([
-        util_1.modifyFunction(reducerFilePath, n => parentReducerNames.includes(n), n => addNestedReducerCalls(n, name)),
+        util_1.modifyFunction(reducerFilePath, n => parentReducerNames.includes(n), n => addNestedReducerCalls(n, parentName, name)),
         util_1.addImports(reducerFilePath, 'app/platform', [CALL_NESTED_REDUCERS_FUNCTION_NAME], true, true),
-        util_1.addImports(reducerFilePath, getImportPath(name), [reducer], true, true),
+        util_1.addImports(reducerFilePath, getImportPath(name), [util_1.componentNames.reducer(name), util_1.componentNames.initializationAction(name)], true, true),
     ]);
 }
 function component(options) {

@@ -8,6 +8,7 @@ import {
   noop,
   Rule,
   SchematicContext,
+  SchematicsException,
   template,
   Tree,
   url,
@@ -127,16 +128,28 @@ function addInitialNestedReducerCall(node: ts.FunctionBody, name: string) {
   return [insertAt(node.getStart() + 1, content)];
 }
 
-// tslint:disable-next-line:variable-name
-function addNestedReducerCallDuringInitialization(_node: ts.FunctionBody, _name: string) {
-  return [];
+function addNestedReducerCallDuringInitialization(node: ts.FunctionBody, parentName: string, name: string) {
+  const caseClause = findNodes(node, ts.SyntaxKind.CaseClause)
+    .map(n => n as ts.CaseClause)
+    .find(n => n.getText().includes(pageNames.initializationAction(parentName)) || n.getText().includes(names.initializationAction(parentName)));
+
+  if (!caseClause) {
+    throw new SchematicsException('Could not find case clause for initialization action');
+  }
+
+  const initializationExpression = findNodes(caseClause, ts.SyntaxKind.ObjectLiteralExpression)
+    .map(n => n as ts.ObjectLiteralExpression)[0];
+
+  const reducerCall = `${names.reducer(name)}(state.${names.stateName(name)}, new ${names.initializationAction(name)}(action.dto.${names.stateName(name)}))`;
+
+  return insertLastInObject(initializationExpression, names.stateName(name), reducerCall, 6);
 }
 
-function addNestedReducerCalls(node: ts.FunctionDeclaration, name: string) {
+function addNestedReducerCalls(node: ts.FunctionDeclaration, parentName: string, name: string) {
   const body = node.body!;
   return [
     ...addInitialNestedReducerCall(body, name),
-    ...addNestedReducerCallDuringInitialization(body, name),
+    ...addNestedReducerCallDuringInitialization(body, parentName, name),
   ];
 }
 
@@ -150,12 +163,10 @@ function insertInParentReducer(parentDirPath: string, name: string): Rule {
     names.reducer(parentName),
   ];
 
-  const reducer = names.reducer(name);
-
   return chain([
-    modifyFunction(reducerFilePath, n => parentReducerNames.includes(n), n => addNestedReducerCalls(n, name)),
+    modifyFunction(reducerFilePath, n => parentReducerNames.includes(n), n => addNestedReducerCalls(n, parentName, name)),
     addImports(reducerFilePath, 'app/platform', [CALL_NESTED_REDUCERS_FUNCTION_NAME], true, true),
-    addImports(reducerFilePath, getImportPath(name), [reducer], true, true),
+    addImports(reducerFilePath, getImportPath(name), [names.reducer(name), names.initializationAction(name)], true, true),
   ]);
 }
 

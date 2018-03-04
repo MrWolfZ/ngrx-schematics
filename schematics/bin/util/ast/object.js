@@ -5,7 +5,6 @@ const ts = require("@schematics/angular/node_modules/typescript");
 const ast_utils_1 = require("@schematics/angular/utility/ast-utils");
 const util_1 = require("./util");
 function getPropertyAssignments(objectNode, propertyName) {
-    // Get all the children property assignment of object literals.
     return objectNode.properties
         .filter(prop => prop.kind === ts.SyntaxKind.PropertyAssignment)
         .map(prop => prop)
@@ -17,6 +16,12 @@ function getPropertyAssignments(objectNode, propertyName) {
     });
 }
 exports.getPropertyAssignments = getPropertyAssignments;
+function getSpreadAssignments(objectNode) {
+    return objectNode.properties
+        .filter(prop => prop.kind === ts.SyntaxKind.SpreadAssignment)
+        .map(prop => prop);
+}
+exports.getSpreadAssignments = getSpreadAssignments;
 function getPropertyAssignment(objectNode, propertyName) {
     // Get all the children property assignment of object literals.
     const matchingProperties = getPropertyAssignments(objectNode, propertyName);
@@ -33,10 +38,15 @@ function insertLastInObject(objectNode, propertyName, value, objectIndentation) 
     }
     const content = `${propertyName}: ${value}`;
     const propertyAssignments = getPropertyAssignments(objectNode);
-    if (propertyAssignments.length === 0) {
+    const spreadAssignments = getSpreadAssignments(objectNode);
+    const assignments = [
+        ...propertyAssignments,
+        ...spreadAssignments,
+    ];
+    if (assignments.length === 0) {
         return [util_1.insertInEmptyArrayOrObject(objectNode, `${content},`, objectIndentation)];
     }
-    const lastElement = util_1.getLastOccurrence(propertyAssignments);
+    const lastElement = util_1.getLastOccurrence(assignments);
     const position = lastElement.getEnd();
     return [util_1.insertAt(position, `,\n${util_1.makeWhitespace(objectIndentation + 2)}${content}`)];
 }

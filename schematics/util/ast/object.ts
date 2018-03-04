@@ -4,11 +4,8 @@ import { findNodes } from '@schematics/angular/utility/ast-utils';
 import { applyInsertChanges, getFileSource, getLastOccurrence, getNodeNameAsString, insertAt, insertInEmptyArrayOrObject, makeWhitespace } from './util';
 
 export function getPropertyAssignments(objectNode: ts.ObjectLiteralExpression, propertyName?: string) {
-  // Get all the children property assignment of object literals.
   return objectNode.properties
     .filter(prop => prop.kind === ts.SyntaxKind.PropertyAssignment)
-    // Filter out every fields that's not "propertyName". Also handles string literals
-    // (but not expressions).
     .map(prop => prop as ts.PropertyAssignment)
     .filter(prop => {
       if (propertyName === undefined) {
@@ -17,6 +14,12 @@ export function getPropertyAssignments(objectNode: ts.ObjectLiteralExpression, p
 
       return getNodeNameAsString(prop.name) === propertyName;
     });
+}
+
+export function getSpreadAssignments(objectNode: ts.ObjectLiteralExpression) {
+  return objectNode.properties
+    .filter(prop => prop.kind === ts.SyntaxKind.SpreadAssignment)
+    .map(prop => prop as ts.SpreadAssignment);
 }
 
 export function getPropertyAssignment(objectNode: ts.ObjectLiteralExpression, propertyName: string) {
@@ -39,12 +42,17 @@ export function insertLastInObject(objectNode: ts.ObjectLiteralExpression, prope
   const content = `${propertyName}: ${value}`;
 
   const propertyAssignments = getPropertyAssignments(objectNode);
+  const spreadAssignments = getSpreadAssignments(objectNode);
+  const assignments = [
+    ...propertyAssignments,
+    ...spreadAssignments,
+  ];
 
-  if (propertyAssignments.length === 0) {
+  if (assignments.length === 0) {
     return [insertInEmptyArrayOrObject(objectNode, `${content},`, objectIndentation)];
   }
 
-  const lastElement = getLastOccurrence(propertyAssignments);
+  const lastElement = getLastOccurrence(assignments);
   const position = lastElement.getEnd();
 
   return [insertAt(position, `,\n${makeWhitespace(objectIndentation + 2)}${content}`)];

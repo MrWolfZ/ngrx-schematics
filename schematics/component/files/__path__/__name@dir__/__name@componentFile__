@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { <%= state(name) %> } from './<%= stateFileNoExt(name) %>';
 
 @Component({
+  selector: '<%= selector(name, prefix) %>',
   templateUrl: './<%= componentTemplateFile(name) %>',
   styleUrls: ['./<%= componentFileNoExt(name) %>.<%= styleext %>'],
   changeDetection: ChangeDetectionStrategy.OnPush,
