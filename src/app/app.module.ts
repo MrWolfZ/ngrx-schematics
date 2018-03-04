@@ -11,6 +11,10 @@ import './platform/rxjs-imports';
 import { AppComponent } from './app.component';
 import { appRoutes } from './app.routing';
 
+export function appReducer(s: any, _: any) {
+  return s;
+}
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -19,7 +23,7 @@ import { appRoutes } from './app.routing';
     CommonModule,
     BrowserModule,
     RouterModule.forRoot(appRoutes),
-    StoreModule.forRoot((s: any, _: any) => s),
+    StoreModule.forRoot(appReducer),
     EffectsModule.forRoot([]),
   ],
   providers: [],
