@@ -1,0 +1,22 @@
+import { <%= initializationAction(name) %> } from './<%= actionsFileNoExt(name) %>';
+import { <%= reducer(name) %> } from './<%= reducerFileNoExt(name) %>';
+import { <%= sortLexicographically(dto(name), initialStateConstant(name)).join(', ') %> } from './<%= stateFileNoExt(name) %>';
+
+export const <%= dtoMockConstant(name) %>: <%= dto(name) %> = {
+
+};
+
+describe(<%= reducer(name) %>.name, () => {
+  it('should return the initial state when called with undefined state', () => {
+    expect(<%= reducer(name) %>(undefined, { type: 'INIT' } as any)).toBeDefined();
+  });
+
+  it('should return the modified state when called with initialization action', () => {
+    const initializedState = <%= reducer(name) %>(
+      <%= initialStateConstant(name) %>,
+      new <%= initializationAction(name) %>(<%= dtoMockConstant(name) %>),
+    );
+
+    expect(initializedState).not.toBe(<%= initialStateConstant(name) %>);
+  });
+});

@@ -34,6 +34,7 @@ import {
   modifyFunction,
   moduleNames,
   pageNames,
+  sortLexicographically,
 } from '../util';
 
 interface Options {
@@ -103,6 +104,26 @@ function insertInParentState(parentDirPath: string, name: string): Rule {
   ]);
 }
 
+function insertInParentMockDto(parentDirPath: string, name: string): Rule {
+  const isPage = isPagePath(parentDirPath);
+  const parentName = getParentNameFromPath(parentDirPath);
+  const stateFilePath = `${parentDirPath}/${isPage ? pageNames.reducerSpecFile(parentName) : names.reducerSpecFile(parentName)}`;
+
+  const parentDtoMockConstantNames = [
+    pageNames.dtoMockConstant(parentName),
+    names.dtoMockConstant(parentName),
+  ];
+
+  const dtoMockConstant = names.dtoMockConstant(name);
+
+  return chain([
+    addPropertyToExportObjectLiteral(stateFilePath, n => parentDtoMockConstantNames.includes(n), names.stateName(name), dtoMockConstant),
+    addImports(stateFilePath, `./${names.dir(name)}/${names.reducerSpecFileNoExt(name)}`, [
+      dtoMockConstant,
+    ], true, true),
+  ]);
+}
+
 const CALL_NESTED_REDUCERS_FUNCTION_NAME = 'callNestedReducers';
 
 function addInitialNestedReducerCallToExistingCall(node: ts.FunctionBody, name: string) {
@@ -137,8 +158,10 @@ function addNestedReducerCallDuringInitialization(node: ts.FunctionBody, parentN
     throw new SchematicsException('Could not find case clause for initialization action');
   }
 
-  const initializationExpression = findNodes(caseClause, ts.SyntaxKind.ObjectLiteralExpression)
-    .map(n => n as ts.ObjectLiteralExpression)[0];
+  const initializationExpression = getLastOccurrence(
+    findNodes(caseClause, ts.SyntaxKind.ObjectLiteralExpression)
+      .map(n => n as ts.ObjectLiteralExpression)
+  );
 
   const reducerCall = `${names.reducer(name)}(state.${names.stateName(name)}, new ${names.initializationAction(name)}(action.dto.${names.stateName(name)}))`;
 
@@ -189,6 +212,7 @@ export function component(options: Options): Rule {
         ...options,
         selector,
         ...names,
+        sortLexicographically: sortLexicographically as any,
       }),
       move(sourceDir),
     ]);
@@ -200,6 +224,7 @@ export function component(options: Options): Rule {
       addImports(modulePath, `./${pageNames.dir(pageName)}`, [component], false, true),
       insertParentExport(parentDirPath, options.name),
       insertInParentState(parentDirPath, options.name),
+      insertInParentMockDto(parentDirPath, options.name),
       insertInParentReducer(parentDirPath, options.name),
       mergeWith(templateSource),
     ])(host, context);

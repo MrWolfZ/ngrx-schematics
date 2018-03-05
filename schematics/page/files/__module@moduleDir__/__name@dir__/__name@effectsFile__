@@ -12,8 +12,11 @@ export class <%= effects(name) %> {
   @Effect()
   loadPageData$: Observable<Action> = this.actions$
     .ofType(<%= loadAction(name) %>.TYPE)
-    .flatMap(() =>
-      Observable.of(new <%= initializationAction(name) %>({} as <%= dto(name) %>)).delay(100)
+    .map<Action, <%= dto(name) %>>(() => ({
+
+    }))
+    .flatMap(dto =>
+      Observable.of(new <%= initializationAction(name) %>(dto)).delay(100)
     );
 
   constructor(private actions$: Actions) { }

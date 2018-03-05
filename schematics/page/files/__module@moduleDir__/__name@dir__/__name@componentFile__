@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs/Observable';
 
-import { <% if(state(name) <= 'RootState') { %><%= state(name) %>, <% } %>RootState<% if(state(name) > 'RootState') { %>, <%= state(name) %><% } %> } from './<%= stateFileNoExt(name) %>';
+import { <%= sortLexicographically(state(name), 'RootState').join(', ') %> } from './<%= stateFileNoExt(name) %>';
 
 @Component({
   templateUrl: './<%= componentTemplateFile(name) %>',

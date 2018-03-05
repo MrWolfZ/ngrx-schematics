@@ -2,7 +2,17 @@ import { chain, Rule, Tree } from '@angular-devkit/schematics';
 import * as ts from '@schematics/angular/node_modules/typescript';
 import { findNodes } from '@schematics/angular/utility/ast-utils';
 
-import { applyInsertChanges, getFileSource, getLastOccurrence, insertAfter, insertAt, insertBefore, InsertChange } from './util';
+import {
+  applyInsertChanges,
+  getFileSource,
+  getLastOccurrence,
+  insertAfter,
+  insertAt,
+  insertBefore,
+  InsertChange,
+} from './util';
+
+import { sortLexicographicallyBy } from '../strings';
 
 function insertSymbolToExistingImport(importsFromFile: ts.Node[], symbolName: string, importOnSingleLine: boolean): InsertChange[] {
   const identifiers: ts.Identifier[] = [];
@@ -24,9 +34,7 @@ function insertSymbolToExistingImport(importsFromFile: ts.Node[], symbolName: st
     }
   }
 
-  const sortedAlphabetically = [...identifiers].sort(
-    (l, r) => l.text.toLowerCase() < r.text.toLowerCase() ? -1 : l.text.toLowerCase() > r.text.toLowerCase() ? 1 : 0
-  );
+  const sortedAlphabetically = sortLexicographicallyBy(i => i.text, ...identifiers);
 
   let successorNodeIdx = sortedAlphabetically.findIndex(i => i.text.toLowerCase() > symbolName.toLowerCase());
   successorNodeIdx = successorNodeIdx === -1 ? sortedAlphabetically.length : successorNodeIdx;
@@ -67,7 +75,7 @@ function insertImport(
   const insertAtBeginning = allImports.length === 0;
   const separator = insertAtBeginning ? '' : `;\n${separateWithExtraNewline ? '\n' : ''}`;
   const symbol = importOnSingleLine ? ` ${symbolName} ` : `\n  ${symbolName},\n`;
-  const content = `${separator}import {${symbol}} from '${importPath}'${insertAtBeginning ? ';\n' : ''}`;
+  const content = `${separator}import {${symbol}} from '${importPath}'${insertAtBeginning ? ';\n\n' : ''}`;
 
   if (insertAtBeginning) {
     return [insertAt(0, content)];

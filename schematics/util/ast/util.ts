@@ -71,7 +71,7 @@ function nodesByPosition(first: ts.Node, second: ts.Node): number {
   return first.getStart() - second.getStart();
 }
 
-export function getLastOccurrence(nodes: Iterable<ts.Node> & ArrayLike<ts.Node>) {
+export function getLastOccurrence<T extends ts.Node>(nodes: Iterable<T> & ArrayLike<T>) {
   if (nodes.length === 0) {
     throw new Error('must have at least one node to get last occurrence');
   }

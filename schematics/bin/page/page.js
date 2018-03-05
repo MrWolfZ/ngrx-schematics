@@ -51,7 +51,7 @@ function page(options) {
     const routingPath = `${sourceDir}/${util_1.moduleNames.dir(options.module)}/${util_1.moduleNames.routingFile(options.module)}`;
     return (host, context) => {
         const templateSource = schematics_1.apply(schematics_1.url('../../page/files'), [
-            schematics_1.template(Object.assign({}, core_1.strings, options, util_1.pageNames, { moduleDir: util_1.moduleNames.dir })),
+            schematics_1.template(Object.assign({}, core_1.strings, options, util_1.pageNames, { moduleDir: util_1.moduleNames.dir, sortLexicographically: util_1.sortLexicographically })),
             schematics_1.move(sourceDir),
         ]);
         const page = util_1.pageNames.component(options.name);

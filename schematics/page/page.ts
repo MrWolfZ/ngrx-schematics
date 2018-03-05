@@ -25,7 +25,7 @@ import {
   insertLastInArray,
   moduleNames,
   pageNames as names,
-  pageNames,
+  sortLexicographically,
 } from '../util';
 
 interface Options {
@@ -99,6 +99,7 @@ export function page(options: Options): Rule {
         ...options,
         ...names,
         moduleDir: moduleNames.dir,
+        sortLexicographically: sortLexicographically as any,
       }),
       move(sourceDir),
     ]);
@@ -115,7 +116,7 @@ export function page(options: Options): Rule {
       addProvidersToModule(modulePath, [guard]),
       addImportsToModule(modulePath, [featureStateImport]),
       insertEffect(modulePath, effects),
-      addImports(modulePath, `./${pageNames.dir(options.name)}`, [
+      addImports(modulePath, `./${names.dir(options.name)}`, [
         page,
         guard,
         featureStateNameConstant,
@@ -123,7 +124,7 @@ export function page(options: Options): Rule {
         effects,
       ], false, true),
       insertRoute(routingPath, options.name),
-      addImports(routingPath, `./${pageNames.dir(options.name)}`, [
+      addImports(routingPath, `./${names.dir(options.name)}`, [
         page,
         guard,
       ], true, true),

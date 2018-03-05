@@ -4,6 +4,7 @@ const schematics_1 = require("@angular-devkit/schematics");
 const ts = require("@schematics/angular/node_modules/typescript");
 const ast_utils_1 = require("@schematics/angular/utility/ast-utils");
 const util_1 = require("./util");
+const strings_1 = require("../strings");
 function insertSymbolToExistingImport(importsFromFile, symbolName, importOnSingleLine) {
     const identifiers = [];
     for (const i of importsFromFile) {
@@ -20,7 +21,7 @@ function insertSymbolToExistingImport(importsFromFile, symbolName, importOnSingl
             identifiers.push(identifier);
         }
     }
-    const sortedAlphabetically = [...identifiers].sort((l, r) => l.text.toLowerCase() < r.text.toLowerCase() ? -1 : l.text.toLowerCase() > r.text.toLowerCase() ? 1 : 0);
+    const sortedAlphabetically = strings_1.sortLexicographicallyBy(i => i.text, ...identifiers);
     let successorNodeIdx = sortedAlphabetically.findIndex(i => i.text.toLowerCase() > symbolName.toLowerCase());
     successorNodeIdx = successorNodeIdx === -1 ? sortedAlphabetically.length : successorNodeIdx;
     const separator = `${importOnSingleLine ? ' ' : '\n  '}`;
@@ -46,7 +47,7 @@ function insertImport(source, symbolName, importPath, importOnSingleLine, separa
     const insertAtBeginning = allImports.length === 0;
     const separator = insertAtBeginning ? '' : `;\n${separateWithExtraNewline ? '\n' : ''}`;
     const symbol = importOnSingleLine ? ` ${symbolName} ` : `\n  ${symbolName},\n`;
-    const content = `${separator}import {${symbol}} from '${importPath}'${insertAtBeginning ? ';\n' : ''}`;
+    const content = `${separator}import {${symbol}} from '${importPath}'${insertAtBeginning ? ';\n\n' : ''}`;
     if (insertAtBeginning) {
         return [util_1.insertAt(0, content)];
     }
