@@ -24,7 +24,7 @@ function getParentNameFromPath(parentDirPath) {
     const parentDirPathParts = parentDirPath.split('/');
     return util_1.getPageOrComponentName(parentDirPathParts[parentDirPathParts.length - 1]);
 }
-function insertInParentState(parentDirPath, name) {
+function insertInParentState(parentDirPath, name, isArray) {
     const isPage = util_1.isPagePath(parentDirPath);
     const parentName = getParentNameFromPath(parentDirPath);
     const stateFilePath = `${parentDirPath}/${isPage ? util_1.pageNames.stateFile(parentName) : util_1.componentNames.stateFile(parentName)}`;
@@ -43,16 +43,16 @@ function insertInParentState(parentDirPath, name) {
     const dto = util_1.componentNames.dto(name);
     const state = util_1.componentNames.state(name);
     return schematics_1.chain([
-        util_1.addPropertyToInterface(stateFilePath, n => parentDtoInterfaceNames.includes(n), util_1.componentNames.stateName(name), dto),
-        util_1.addPropertyToInterface(stateFilePath, n => parentStateInterfaceNames.includes(n), util_1.componentNames.stateName(name), state),
-        util_1.addPropertyToExportObjectLiteral(stateFilePath, n => parentInitialStateConstantNames.includes(n), util_1.componentNames.stateName(name), 'undefined!'),
+        util_1.addPropertyToInterface(stateFilePath, n => parentDtoInterfaceNames.includes(n), util_1.componentNames.stateName(name), `${dto}${isArray ? '[]' : ''}`),
+        util_1.addPropertyToInterface(stateFilePath, n => parentStateInterfaceNames.includes(n), util_1.componentNames.stateName(name), `${state}${isArray ? '[]' : ''}`),
+        util_1.addPropertyToExportObjectLiteral(stateFilePath, n => parentInitialStateConstantNames.includes(n), util_1.componentNames.stateName(name), isArray ? '[]' : 'undefined!'),
         util_1.addImports(stateFilePath, getImportPath(name), [
             dto,
             state,
         ], true, true),
     ]);
 }
-function insertInParentMockDto(parentDirPath, name) {
+function insertInParentMockDto(parentDirPath, name, isArray) {
     const isPage = util_1.isPagePath(parentDirPath);
     const parentName = getParentNameFromPath(parentDirPath);
     const stateFilePath = `${parentDirPath}/${isPage ? util_1.pageNames.reducerSpecFile(parentName) : util_1.componentNames.reducerSpecFile(parentName)}`;
@@ -62,31 +62,35 @@ function insertInParentMockDto(parentDirPath, name) {
     ];
     const dtoMockConstant = util_1.componentNames.dtoMockConstant(name);
     return schematics_1.chain([
-        util_1.addPropertyToExportObjectLiteral(stateFilePath, n => parentDtoMockConstantNames.includes(n), util_1.componentNames.stateName(name), dtoMockConstant),
+        util_1.addPropertyToExportObjectLiteral(stateFilePath, n => parentDtoMockConstantNames.includes(n), util_1.componentNames.stateName(name), isArray ? `[${dtoMockConstant}]` : dtoMockConstant),
         util_1.addImports(stateFilePath, `./${util_1.componentNames.dir(name)}/${util_1.componentNames.reducerSpecFileNoExt(name)}`, [
             dtoMockConstant,
         ], true, true),
     ]);
 }
 const CALL_NESTED_REDUCERS_FUNCTION_NAME = 'callNestedReducers';
-function addInitialNestedReducerCallToExistingCall(node, name) {
+const CREATE_ARRAY_REDUCER_FUNCTION_NAME = 'createArrayReducer';
+function getNestedReducerValue(name, isArray) {
+    return `${isArray ? `${CREATE_ARRAY_REDUCER_FUNCTION_NAME}(${util_1.componentNames.reducer(name)})` : util_1.componentNames.reducer(name)}`;
+}
+function addInitialNestedReducerCallToExistingCall(node, name, isArray) {
     const existingCall = util_1.getFunctionCall(node, CALL_NESTED_REDUCERS_FUNCTION_NAME);
     const reducersLiteral = ast_utils_1.findNodes(existingCall, ts.SyntaxKind.ObjectLiteralExpression)
         .map(n => n)[0];
-    return util_1.insertLastInObject(reducersLiteral, util_1.componentNames.stateName(name), util_1.componentNames.reducer(name), 2);
+    return util_1.insertLastInObject(reducersLiteral, util_1.componentNames.stateName(name), getNestedReducerValue(name, isArray), 2);
 }
-function addInitialNestedReducerCall(node, name) {
+function addInitialNestedReducerCall(node, name, isArray) {
     if (node.getText().includes(CALL_NESTED_REDUCERS_FUNCTION_NAME)) {
-        return addInitialNestedReducerCallToExistingCall(node, name);
+        return addInitialNestedReducerCallToExistingCall(node, name, isArray);
     }
     const content = `
-  state = callNestedReducers(state, action, {
-    ${util_1.componentNames.stateName(name)}: ${util_1.componentNames.reducer(name)},
+  state = ${CALL_NESTED_REDUCERS_FUNCTION_NAME}(state, action, {
+    ${util_1.componentNames.stateName(name)}: ${getNestedReducerValue(name, isArray)},
   });
 `;
     return [util_1.insertAt(node.getStart() + 1, content)];
 }
-function addNestedReducerCallDuringInitialization(node, parentName, name) {
+function addNestedReducerCallDuringInitialization(node, parentName, name, isArray) {
     const caseClause = ast_utils_1.findNodes(node, ts.SyntaxKind.CaseClause)
         .map(n => n)
         .find(n => n.getText().includes(util_1.pageNames.initializationAction(parentName)) || n.getText().includes(util_1.componentNames.initializationAction(parentName)));
@@ -95,17 +99,21 @@ function addNestedReducerCallDuringInitialization(node, parentName, name) {
     }
     const initializationExpression = util_1.getLastOccurrence(ast_utils_1.findNodes(caseClause, ts.SyntaxKind.ObjectLiteralExpression)
         .map(n => n));
-    const reducerCall = `${util_1.componentNames.reducer(name)}(state.${util_1.componentNames.stateName(name)}, new ${util_1.componentNames.initializationAction(name)}(action.dto.${util_1.componentNames.stateName(name)}))`;
+    const reducerCall = isArray
+        ? `action.dto.${util_1.componentNames.stateName(name)}.map((dto, idx) =>
+          ${util_1.componentNames.reducer(name)}(state.${util_1.componentNames.stateName(name)}[idx], new ${util_1.componentNames.initializationAction(name)}(dto))
+        )`
+        : `${util_1.componentNames.reducer(name)}(state.${util_1.componentNames.stateName(name)}, new ${util_1.componentNames.initializationAction(name)}(action.dto.${util_1.componentNames.stateName(name)}))`;
     return util_1.insertLastInObject(initializationExpression, util_1.componentNames.stateName(name), reducerCall, 6);
 }
-function addNestedReducerCalls(node, parentName, name) {
+function addNestedReducerCalls(node, parentName, name, isArray) {
     const body = node.body;
     return [
-        ...addInitialNestedReducerCall(body, name),
-        ...addNestedReducerCallDuringInitialization(body, parentName, name),
+        ...addInitialNestedReducerCall(body, name, isArray),
+        ...addNestedReducerCallDuringInitialization(body, parentName, name, isArray),
     ];
 }
-function insertInParentReducer(parentDirPath, name) {
+function insertInParentReducer(parentDirPath, name, isArray) {
     const isPage = util_1.isPagePath(parentDirPath);
     const parentName = getParentNameFromPath(parentDirPath);
     const reducerFilePath = `${parentDirPath}/${isPage ? util_1.pageNames.reducerFile(parentName) : util_1.componentNames.reducerFile(parentName)}`;
@@ -114,8 +122,11 @@ function insertInParentReducer(parentDirPath, name) {
         util_1.componentNames.reducer(parentName),
     ];
     return schematics_1.chain([
-        util_1.modifyFunction(reducerFilePath, n => parentReducerNames.includes(n), n => addNestedReducerCalls(n, parentName, name)),
-        util_1.addImports(reducerFilePath, 'app/platform', [CALL_NESTED_REDUCERS_FUNCTION_NAME], true, true),
+        util_1.modifyFunction(reducerFilePath, n => parentReducerNames.includes(n), n => addNestedReducerCalls(n, parentName, name, isArray)),
+        util_1.addImports(reducerFilePath, 'app/platform', [
+            CALL_NESTED_REDUCERS_FUNCTION_NAME,
+            ...(isArray ? [CREATE_ARRAY_REDUCER_FUNCTION_NAME] : []),
+        ], true, true),
         util_1.addImports(reducerFilePath, getImportPath(name), [util_1.componentNames.reducer(name), util_1.componentNames.initializationAction(name)], true, true),
     ]);
 }
@@ -140,9 +151,9 @@ function component(options) {
             util_1.addDeclarationsToModule(modulePath, [component]),
             util_1.addImports(modulePath, `./${util_1.pageNames.dir(pageName)}`, [component], false, true),
             options.skipParentImport ? schematics_1.noop() : insertParentExport(parentDirPath, options.name),
-            options.skipParentImport ? schematics_1.noop() : insertInParentState(parentDirPath, options.name),
-            options.skipParentImport ? schematics_1.noop() : insertInParentMockDto(parentDirPath, options.name),
-            options.skipParentImport ? schematics_1.noop() : insertInParentReducer(parentDirPath, options.name),
+            options.skipParentImport ? schematics_1.noop() : insertInParentState(parentDirPath, options.name, options.array),
+            options.skipParentImport ? schematics_1.noop() : insertInParentMockDto(parentDirPath, options.name, options.array),
+            options.skipParentImport ? schematics_1.noop() : insertInParentReducer(parentDirPath, options.name, options.array),
             schematics_1.mergeWith(templateSource),
         ])(host, context);
     };

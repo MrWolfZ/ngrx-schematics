@@ -43,6 +43,12 @@
       "type": "boolean",
       "default": false,
       "alias": "np"
+    },
+    "array": {
+      "description": "Specifies that the component should be imported into its parent as an array.",
+      "type": "boolean",
+      "default": false,
+      "alias": "arr"
     }
   },
   "required": [
