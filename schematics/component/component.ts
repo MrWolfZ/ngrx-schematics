@@ -44,6 +44,7 @@ interface Options {
   inlineTemplate: boolean;
   prefix?: string;
   styleext: string;
+  skipParentImport: boolean;
 }
 
 function insertParentExport(parentDirPath: string, name: string): Rule {
@@ -222,10 +223,10 @@ export function component(options: Options): Rule {
     return chain([
       addDeclarationsToModule(modulePath, [component]),
       addImports(modulePath, `./${pageNames.dir(pageName)}`, [component], false, true),
-      insertParentExport(parentDirPath, options.name),
-      insertInParentState(parentDirPath, options.name),
-      insertInParentMockDto(parentDirPath, options.name),
-      insertInParentReducer(parentDirPath, options.name),
+      options.skipParentImport ? noop() : insertParentExport(parentDirPath, options.name),
+      options.skipParentImport ? noop() : insertInParentState(parentDirPath, options.name),
+      options.skipParentImport ? noop() : insertInParentMockDto(parentDirPath, options.name),
+      options.skipParentImport ? noop() : insertInParentReducer(parentDirPath, options.name),
       mergeWith(templateSource),
     ])(host, context);
   };

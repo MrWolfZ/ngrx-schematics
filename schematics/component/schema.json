@@ -37,6 +37,12 @@
       "description": "The file extension to be used for style files.",
       "type": "string",
       "default": "css"
+    },
+    "skipParentImport": {
+      "description": "Specifies that the component has no parent that it should be imported to.",
+      "type": "boolean",
+      "default": false,
+      "alias": "np"
     }
   },
   "required": [

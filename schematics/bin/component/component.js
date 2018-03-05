@@ -139,10 +139,10 @@ function component(options) {
         return schematics_1.chain([
             util_1.addDeclarationsToModule(modulePath, [component]),
             util_1.addImports(modulePath, `./${util_1.pageNames.dir(pageName)}`, [component], false, true),
-            insertParentExport(parentDirPath, options.name),
-            insertInParentState(parentDirPath, options.name),
-            insertInParentMockDto(parentDirPath, options.name),
-            insertInParentReducer(parentDirPath, options.name),
+            options.skipParentImport ? schematics_1.noop() : insertParentExport(parentDirPath, options.name),
+            options.skipParentImport ? schematics_1.noop() : insertInParentState(parentDirPath, options.name),
+            options.skipParentImport ? schematics_1.noop() : insertInParentMockDto(parentDirPath, options.name),
+            options.skipParentImport ? schematics_1.noop() : insertInParentReducer(parentDirPath, options.name),
             schematics_1.mergeWith(templateSource),
         ])(host, context);
     };
